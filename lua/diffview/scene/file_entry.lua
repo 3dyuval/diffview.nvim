@@ -3,8 +3,8 @@ local oop = require("diffview.oop")
 
 local Diff1 = lazy.access("diffview.scene.layouts.diff_1", "Diff1") ---@type Diff1|LazyModule
 local Diff2 = lazy.access("diffview.scene.layouts.diff_2", "Diff2") ---@type Diff2|LazyModule
-local File = lazy.access("diffview.vcs.file", "File") ---@type vcs.File|LazyModule
-local RevType = lazy.access("diffview.vcs.rev", "RevType") ---@type RevType|LazyModule
+local File = lazy.access("diffview.adapters.vcs.file", "File") ---@type vcs.File|LazyModule
+local RevType = lazy.access("diffview.adapters.vcs.rev", "RevType") ---@type RevType|LazyModule
 local utils = lazy.require("diffview.utils") ---@module "diffview.utils"
 
 local api = vim.api

@@ -1,5 +1,5 @@
-local GitAdapter = require('diffview.vcs.adapters.git').GitAdapter
-local HgAdapter = require('diffview.vcs.adapters.hg').HgAdapter
+local GitAdapter = require('diffview.adapters.vcs.adapters.git').GitAdapter
+local HgAdapter = require('diffview.adapters.vcs.adapters.hg').HgAdapter
 
 local M = {}
 

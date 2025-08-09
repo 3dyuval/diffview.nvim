@@ -9,7 +9,7 @@ local HelpPanel = lazy.access("diffview.ui.panels.help_panel", "HelpPanel") ---@
 local StandardView = lazy.access("diffview.scene.views.standard.standard_view", "StandardView") ---@type StandardView|LazyModule
 local lib = lazy.require("diffview.lib") ---@module "diffview.lib"
 local utils = lazy.require("diffview.utils") ---@module "diffview.utils"
-local vcs_utils = lazy.require("diffview.vcs.utils") ---@module "diffview.vcs.utils"
+local vcs_utils = lazy.require("diffview.adapters.vcs.utils") ---@module "diffview.adapters.vcs.utils"
 
 local Diff1 = lazy.access("diffview.scene.layouts.diff_1", "Diff1") ---@type Diff1|LazyModule
 local Diff2Hor = lazy.access("diffview.scene.layouts.diff_2_hor", "Diff2Hor") ---@type Diff2Hor|LazyModule

@@ -3,9 +3,9 @@ local lazy = require("diffview.lazy")
 local oop = require("diffview.oop")
 
 local EventEmitter = lazy.access("diffview.events", "EventEmitter") ---@type EventEmitter|LazyModule
-local File = lazy.access("diffview.vcs.file", "File") ---@type vcs.File|LazyModule
+local File = lazy.access("diffview.adapters.vcs.file", "File") ---@type vcs.File|LazyModule
 local FileHistoryView = lazy.access("diffview.scene.views.file_history.file_history_view", "FileHistoryView") ---@type FileHistoryView|LazyModule
-local RevType = lazy.access("diffview.vcs.rev", "RevType") ---@type RevType|LazyModule
+local RevType = lazy.access("diffview.adapters.vcs.rev", "RevType") ---@type RevType|LazyModule
 local config = lazy.require("diffview.config") ---@module "diffview.config"
 local lib = lazy.require("diffview.lib") ---@module "diffview.lib"
 local utils = lazy.require("diffview.utils") ---@module "diffview.utils"

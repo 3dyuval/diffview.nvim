@@ -1,7 +1,7 @@
 local lazy = require("diffview.lazy")
 local oop = require('diffview.oop')
 local utils = require("diffview.utils")
-local Commit = require('diffview.vcs.commit').Commit
+local Commit = require('diffview.adapters.vcs.commit').Commit
 
 local M = {}
 

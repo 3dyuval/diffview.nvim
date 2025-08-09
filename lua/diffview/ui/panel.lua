@@ -1,5 +1,5 @@
 local EventEmitter = require("diffview.events").EventEmitter
-local File = require("diffview.vcs.file").File
+local File = require("diffview.adapters.vcs.file").File
 local PerfTimer = require("diffview.perf").PerfTimer
 local oop = require("diffview.oop")
 local renderer = require("diffview.renderer")

@@ -2,10 +2,10 @@ local async = require("diffview.async")
 local lazy = require("diffview.lazy")
 
 local DiffView = lazy.access("diffview.scene.views.diff.diff_view", "DiffView") ---@type DiffView|LazyModule
-local JobStatus = lazy.access("diffview.vcs.utils", "JobStatus") ---@type JobStatus|LazyModule
+local JobStatus = lazy.access("diffview.adapters.vcs.utils", "JobStatus") ---@type JobStatus|LazyModule
 local lib = lazy.require("diffview.lib") ---@module "diffview.lib"
 local utils = lazy.require("diffview.utils") ---@module "diffview.utils"
-local vcs_utils = lazy.require("diffview.vcs.utils") ---@module "diffview.vcs.utils"
+local vcs_utils = lazy.require("diffview.adapters.vcs.utils") ---@module "diffview.adapters.vcs.utils"
 
 local await = async.await
 

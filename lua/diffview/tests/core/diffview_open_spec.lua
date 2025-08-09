@@ -10,7 +10,7 @@ describe("DiffView Open Process", function()
       local args = arg_parser.parse({ "HEAD~1", "HEAD" }, {})
 
       eq("table", type(args))
-      neq(nil, args.rev_arg)
+      neq(nil, args.args[1])
     end)
 
     it("handles pathspec arguments", function()
@@ -26,7 +26,7 @@ describe("DiffView Open Process", function()
       local args = arg_parser.parse({ "-C", tmp_dir, "HEAD" }, {})
 
       eq("table", type(args))
-      eq(tmp_dir, args.C)
+      eq(tmp_dir, args:get_flag("C"))
 
       fixtures.cleanup_temp_repo(tmp_dir, old_cwd)
     end)
@@ -53,4 +53,3 @@ describe("DiffView Open Process", function()
     end)
   end)
 end)
-

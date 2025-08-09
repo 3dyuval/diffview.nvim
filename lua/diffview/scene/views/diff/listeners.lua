@@ -2,10 +2,10 @@ local async = require("diffview.async")
 local lazy = require("diffview.lazy")
 
 local EventName = lazy.access("diffview.events", "EventName") ---@type EventName|LazyModule
-local RevType = lazy.access("diffview.vcs.rev", "RevType") ---@type RevType|LazyModule
+local RevType = lazy.access("diffview.adapters.vcs.rev", "RevType") ---@type RevType|LazyModule
 local actions = lazy.require("diffview.actions") ---@module "diffview.actions"
 local utils = lazy.require("diffview.utils") ---@module "diffview.utils"
-local vcs_utils = lazy.require("diffview.vcs.utils") ---@module "diffview.vcs.utils"
+local vcs_utils = lazy.require("diffview.adapters.vcs.utils") ---@module "diffview.adapters.vcs.utils"
 
 local api = vim.api
 local await = async.await

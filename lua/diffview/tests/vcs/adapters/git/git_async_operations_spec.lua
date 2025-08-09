@@ -1,5 +1,5 @@
 local helpers = require("diffview.tests.helpers")
-local GitAdapter = require("diffview.vcs.adapters.git").GitAdapter
+local GitAdapter = require("diffview.adapters.vcs.adapters.git").GitAdapter
 local fixtures = require("diffview.tests.fixtures.git_fixtures")
 
 local eq, neq = helpers.eq, helpers.neq
@@ -14,7 +14,7 @@ describe("Git Async Operations", function()
       async_test(function()
         local tmp_dir, old_cwd = fixtures.create_temp_repo()
         local adapter = GitAdapter({ toplevel = tmp_dir })
-        local Rev = require("diffview.vcs.adapters.git.rev").GitRev
+        local Rev = require("diffview.adapters.vcs.adapters.git.rev").GitRev
 
         local head_rev = Rev("HEAD", "commit")
         local content_received = false
@@ -39,7 +39,7 @@ describe("Git Async Operations", function()
       async_test(function()
         local tmp_dir, old_cwd = fixtures.create_temp_repo()
         local adapter = GitAdapter({ toplevel = tmp_dir })
-        local Rev = require("diffview.vcs.adapters.git.rev").GitRev
+        local Rev = require("diffview.adapters.vcs.adapters.git.rev").GitRev
 
         local head_rev = Rev("HEAD", "commit")
         local error_received = false

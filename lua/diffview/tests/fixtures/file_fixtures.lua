@@ -23,7 +23,7 @@ end
 function M.create_directory_comparison_scenario(config)
   config = config or {}
   local base_name = config.base_name or "test_dir"
-  
+
   local dir1 = vim.fn.tempname() .. "_" .. base_name .. "1"
   local dir2 = vim.fn.tempname() .. "_" .. base_name .. "2"
 
@@ -58,7 +58,7 @@ function M.create_binary_comparison_scenario()
   -- Create binary-like content
   local binary_content1 = {}
   local binary_content2 = {}
-  
+
   for i = 1, 50 do
     table.insert(binary_content1, string.char(i % 256))
     table.insert(binary_content2, string.char((i + 10) % 256))
@@ -79,14 +79,14 @@ function M.create_unicode_comparison_scenario()
   vim.fn.writefile({
     "Unicode content: こんにちは世界",
     "Emoji: 🚀 🔥 ⭐️",
-    "Mixed: Hello 世界 🌍"
+    "Mixed: Hello 世界 🌍",
   }, file1)
 
   vim.fn.writefile({
     "Unicode content: こんにちは世界",
     "Emoji: 🚀 🔥 ✨", -- Different emoji
     "Mixed: Hello 世界 🌍",
-    "Additional: 新しい行"
+    "Additional: 新しい行",
   }, file2)
 
   return file1, file2
@@ -102,9 +102,7 @@ function M.create_permission_test_scenario()
   vim.fn.writefile({ "will be unreadable" }, file2)
 
   -- Make file2 unreadable (Unix systems only)
-  if vim.fn.has("unix") == 1 then
-    vim.fn.system("chmod 000 " .. file2)
-  end
+  if vim.fn.has("unix") == 1 then vim.fn.system("chmod 000 " .. file2) end
 
   return file1, file2
 end
@@ -116,7 +114,7 @@ function M.create_mixed_types_scenario()
   local binary_file = vim.fn.tempname() .. ".bin"
 
   vim.fn.writefile({ "This is a text file", "Line 2" }, text_file)
-  
+
   local binary_content = {}
   for i = 0, 255 do
     table.insert(binary_content, string.char(i))
@@ -135,7 +133,7 @@ function M.create_large_files_scenario(line_count)
   local file2 = vim.fn.tempname() .. "_large2.txt"
 
   local content1, content2 = {}, {}
-  
+
   for i = 1, line_count do
     table.insert(content1, "Line " .. i .. " in file 1")
     -- Make every 10th line different
@@ -171,7 +169,7 @@ function M.create_symlink_scenario()
   local symlink_file = vim.fn.tempname() .. "_symlink.txt"
 
   vim.fn.writefile({ "Original file content" }, original_file)
-  
+
   if vim.fn.has("unix") == 1 then
     vim.fn.system("ln -s " .. original_file .. " " .. symlink_file)
   else
@@ -198,7 +196,7 @@ end
 ---Clean up temporary files and directories
 ---@param ... string Paths to clean up
 function M.cleanup(...)
-  for _, path in ipairs({...}) do
+  for _, path in ipairs({ ... }) do
     if vim.fn.isdirectory(path) == 1 then
       vim.fn.delete(path, "rf")
     else
@@ -214,25 +212,34 @@ function M.mock_git_no_index_output(scenario)
   local outputs = {
     modified = {
       "M\tfile1.txt",
-      "M\tcommon.txt"
+      "M\tcommon.txt",
     },
     added = {
-      "A\tunique2.txt"
+      "A\tunique2.txt",
     },
     deleted = {
-      "D\tunique1.txt"
+      "D\tunique1.txt",
     },
     binary = {
-      "M\tbinary.bin"
+      "M\tbinary.bin",
     },
     mixed = {
       "M\tfile1.txt",
-      "A\tadded.txt", 
-      "D\tdeleted.txt"
-    }
+      "A\tadded.txt",
+      "D\tdeleted.txt",
+    },
   }
-  
+
   return outputs[scenario] or outputs.modified
+end
+
+---Get paths to permanent test files for --no-index testing
+---@return string file1_path, string file2_path
+function M.get_test_files()
+  local fixtures_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+  local file1 = fixtures_dir .. "test_files/file1.txt"
+  local file2 = fixtures_dir .. "test_files/file2.txt"
+  return file1, file2
 end
 
 return M

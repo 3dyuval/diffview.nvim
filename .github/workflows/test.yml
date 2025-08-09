@@ -1,0 +1,47 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        neovim-version: [stable, nightly]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim-version }}
+
+      - name: Install Dependencies
+        run: |
+          # Clone plenary.nvim for testing framework
+          mkdir -p .tests/site/pack/deps/start/
+          git clone --depth=1 https://github.com/nvim-lua/plenary.nvim.git .tests/site/pack/deps/start/plenary.nvim
+
+      - name: Run Tests
+        run: |
+          ./scripts/test_runner.sh
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.neovim-version }}-${{ matrix.os }}
+          path: |
+            .tests/
+            test_results.txt
+          retention-days: 7
+

@@ -1,5 +1,5 @@
 local async = require("diffview.async")
-local RevType = require("diffview.vcs.rev").RevType
+local RevType = require("diffview.adapters.vcs.rev").RevType
 local Window = require("diffview.scene.window").Window
 local Layout = require("diffview.scene.layout").Layout
 local oop = require("diffview.oop")

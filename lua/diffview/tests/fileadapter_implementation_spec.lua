@@ -7,7 +7,7 @@ local eq, neq = helpers.eq, helpers.neq
 describe("FileAdapter Implementation (should fail until implemented)", function()
   it("should be able to require FileAdapter module", function()
     -- This will fail - FileAdapter doesn't exist yet
-    local ok, FileAdapter = pcall(require, "diffview.src.adapters.file")
+    local ok, FileAdapter = pcall(require, "diffview.adapters.file")
 
     eq(true, ok, "FileAdapter module should exist")
     neq(nil, FileAdapter, "FileAdapter should not be nil")
@@ -15,14 +15,14 @@ describe("FileAdapter Implementation (should fail until implemented)", function(
 
   it("should be able to require source router", function()
     -- This will fail - source router doesn't exist yet
-    local ok, source_router = pcall(require, "diffview.src.init")
+    local ok, source_router = pcall(require, "diffview.adapters.init")
 
     eq(true, ok, "Source router module should exist")
     neq(nil, source_router, "Source router should not be nil")
   end)
 
   it("should be able to create FileAdapter instance", function()
-    local ok, FileAdapter = pcall(require, "diffview.src.adapters.file")
+    local ok, FileAdapter = pcall(require, "diffview.adapters.file")
     if not ok then error("FileAdapter module not implemented yet") end
 
     local adapter = FileAdapter.create("/tmp", { "file1.txt", "file2.txt" }, nil)

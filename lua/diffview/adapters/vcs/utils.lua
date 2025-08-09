@@ -1,5 +1,5 @@
-local FileDict = require("diffview.vcs.file_dict").FileDict
-local RevType = require("diffview.vcs.rev").RevType
+local FileDict = require("diffview.adapters.vcs.file_dict").FileDict
+local RevType = require("diffview.adapters.vcs.rev").RevType
 local Scanner = require("diffview.scanner")
 local Semaphore = require("diffview.control").Semaphore
 local async = require("diffview.async")

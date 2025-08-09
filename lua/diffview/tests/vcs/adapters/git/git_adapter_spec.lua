@@ -1,5 +1,5 @@
 local helpers = require("diffview.tests.helpers")
-local GitAdapter = require("diffview.vcs.adapters.git").GitAdapter
+local GitAdapter = require("diffview.adapters.vcs.adapters.git").GitAdapter
 local fixtures = require("diffview.tests.fixtures.git_fixtures")
 
 local eq, neq = helpers.eq, helpers.neq

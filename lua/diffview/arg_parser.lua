@@ -36,36 +36,26 @@ end
 ---@return string[]|string|boolean
 function ArgObject:get_flag(names, opt)
   opt = opt or {}
-  if opt.no_empty then
-    opt.expect_string = true
-  end
+  if opt.no_empty then opt.expect_string = true end
 
-  if type(names) ~= "table" then
-    names = { names }
-  end
+  if type(names) ~= "table" then names = { names } end
 
   local values = {}
   for _, name in ipairs(names) do
-    if self.flags[name] then
-      utils.vec_push(values, unpack(self.flags[name]))
-    end
+    if self.flags[name] then utils.vec_push(values, unpack(self.flags[name])) end
   end
 
   values = utils.tbl_fmap(values, function(v)
     if opt.expect_string and v == "true" then
       -- Undo inferred boolean values
-      if opt.no_empty then
-        return nil
-      end
+      if opt.no_empty then return nil end
       v = ""
     elseif not opt.plain and (v == "true" or v == "false") then
       -- Cast to boolean
       v = v == "true"
     end
 
-    if opt.expand then
-      v = vim.fn.expand(v)
-    end
+    if opt.expand then v = vim.fn.expand(v) end
 
     return v
   end)
@@ -79,9 +69,7 @@ end
 local FlagValueMap = oop.create_class("FlagValueMap")
 
 ---FlagValueMap constructor
-function FlagValueMap:init()
-  self.map = {}
-end
+function FlagValueMap:init() self.map = {} end
 
 ---@param flag_synonyms string[]
 ---@param producer? string[]|fun(name_lead: string, arg_lead: string): string[]
@@ -123,9 +111,7 @@ end
 
 ---Get a list of all flag names.
 ---@return string[]
-function FlagValueMap:get_all_names()
-  return utils.vec_slice(self.map)
-end
+function FlagValueMap:get_all_names() return utils.vec_slice(self.map) end
 
 ---@param arg_lead string
 ---@return string[]?
@@ -144,19 +130,13 @@ function FlagValueMap:get_completion(arg_lead)
 
   local name_lead = name .. (not is_short and "=" or "")
   local values = self.map[name]
-  if type(values) == "function" then
-    values = values(name_lead, arg_lead)
-  end
-  if not values then
-    return nil
-  end
+  if type(values) == "function" then values = values(name_lead, arg_lead) end
+  if not values then return nil end
 
   local items = {}
   for _, v in ipairs(values) do
     local e_lead, _ = vim.pesc(arg_lead)
-    if v:match(e_lead) then
-      items[#items + 1] = name_lead .. v
-    end
+    if v:match(e_lead) then items[#items + 1] = name_lead .. v end
   end
 
   return items
@@ -181,11 +161,16 @@ function M.parse(args)
     local flag, value
     flag, value = utils.str_match(arg, short_flag_pat)
     if flag then
-      value = (value == "") and "true" or value
-
-      if not flags[flag] then
-        flags[flag] = {}
+      -- Handle flags that expect the next argument as value
+      if value == "" and flag == "C" and args[i + 1] and not args[i + 1]:match("^-") then
+        -- -C flag expects next argument as path
+        value = args[i + 1]
+        table.remove(args, i + 1) -- Remove consumed argument
+      else
+        value = (value == "") and "true" or value
       end
+
+      if not flags[flag] then flags[flag] = {} end
 
       table.insert(flags[flag], value)
       goto continue
@@ -195,9 +180,7 @@ function M.parse(args)
     if flag then
       value = (value == "") and "true" or value
 
-      if not flags[flag] then
-        flags[flag] = {}
-      end
+      if not flags[flag] then flags[flag] = {} end
 
       table.insert(flags[flag], value)
       goto continue
@@ -216,16 +199,12 @@ end
 ---@return string range, string command
 function M.split_ex_range(arg)
   local idx = arg:match(".*()%A")
-  if not idx then
-    return "", arg
-  end
+  if not idx then return "", arg end
 
   local slice = arg:sub(idx or 1)
   idx = slice:match("[^']()%a")
 
-  if idx then
-    return arg:sub(1, (#arg - #slice) + idx - 1), slice:sub(idx)
-  end
+  if idx then return arg:sub(1, (#arg - #slice) + idx - 1), slice:sub(idx) end
 
   return arg, ""
 end
@@ -303,13 +282,9 @@ function M.scan(cmd_line, opt)
     elseif char:match("%s") then
       if arg ~= "" then
         table.insert(args, arg)
-        if arg == "--" and i - 1 < #cmd_line then
-          divideridx = #args
-        end
+        if arg == "--" and i - 1 < #cmd_line then divideridx = #args end
       end
-      if raw_arg ~= "" then
-        table.insert(raw_args, raw_arg)
-      end
+      if raw_arg ~= "" then table.insert(raw_args, raw_arg) end
       arg = ""
       raw_arg = ""
       -- Skip whitespace
@@ -331,16 +306,12 @@ function M.scan(cmd_line, opt)
       lead_quote = cur_quote
     end
 
-    if arg == "--" and cmd_line:sub(#cmd_line, #cmd_line) ~= "-" then
-      divideridx = #args
-    end
+    if arg == "--" and cmd_line:sub(#cmd_line, #cmd_line) ~= "-" then divideridx = #args end
   end
 
   if not argidx then
     argidx = #args
-    if cmd_line:sub(#cmd_line, #cmd_line):match("%s") then
-      argidx = argidx + 1
-    end
+    if cmd_line:sub(#cmd_line, #cmd_line):match("%s") then argidx = argidx + 1 end
   end
 
   local range
@@ -380,9 +351,7 @@ end
 function M.filter_candidates(arg_lead, candidates)
   arg_lead, _ = vim.pesc(arg_lead)
 
-  return vim.tbl_filter(function(item)
-    return item:match(arg_lead)
-  end, candidates)
+  return vim.tbl_filter(function(item) return item:match(arg_lead) end, candidates)
 end
 
 ---Process completion candidates.
@@ -400,9 +369,7 @@ function M.process_candidates(candidates, ctx, input_cmp)
     ex_lead = (ctx.lead_quote or "") .. ctx.arg_lead:match(".*[^\\]%s(.*)")
   end
 
-  if input_cmp then
-    cmd_lead = ctx.cmd_line:sub(1, ctx.cur_pos - #ex_lead)
-  end
+  if input_cmp then cmd_lead = ctx.cmd_line:sub(1, ctx.cur_pos - #ex_lead) end
 
   local ret = vim.tbl_map(function(v)
     if v:match("^" .. vim.pesc(ctx.arg_lead)) then
@@ -418,12 +385,8 @@ function M.process_candidates(candidates, ctx, input_cmp)
 end
 
 function M.ambiguous_bool(value, default, truthy, falsy)
-  if vim.tbl_contains(truthy, value) then
-    return true
-  end
-  if vim.tbl_contains(falsy, value) then
-    return false
-  end
+  if vim.tbl_contains(truthy, value) then return true end
+  if vim.tbl_contains(falsy, value) then return false end
   return default
 end
 
