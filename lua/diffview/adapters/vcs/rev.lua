@@ -1,4 +1,8 @@
+local lazy = require("diffview.lazy")
 local oop = require("diffview.oop")
+
+local VCSReference = lazy.access("diffview.adapters.vcs_reference", "VCSReference") ---@type VCSReference|LazyModule
+local VCSReferenceType = lazy.access("diffview.adapters.vcs_reference", "VCSReferenceType") ---@type VCSReferenceType|LazyModule
 
 local M = {}
 
@@ -12,56 +16,42 @@ local RevType = oop.enum({
 
 ---@alias RevRange { first: Rev, last: Rev }
 
----@class Rev : diffview.Object
----@field type integer
+---@class Rev : VCSReference
+---@field type integer Legacy field for backward compatibility
 ---@field commit? string A commit SHA.
 ---@field stage? integer A stage number.
 ---@field track_head boolean If true, indicates that the rev should be updated when HEAD changes.
-local Rev = oop.create_class("Rev")
+local Rev = oop.create_class("Rev", VCSReference)
 
----Rev constructor
+---Rev constructor - maintains backward compatibility with existing RevType enum
 ---@param rev_type RevType
 ---@param revision string|number Commit SHA or stage number.
 ---@param track_head? boolean
 function Rev:init(rev_type, revision, track_head)
-  local t = type(revision)
-
-  assert(
-    revision == nil or t == "string" or t == "number",
-    "'revision' must be one of: nil, string, number!"
-  )
-  if t == "string" then
-    assert(revision ~= "", "'revision' cannot be an empty string!")
-  elseif t == "number" then
-    assert(
-      revision >= 0 and revision <= 3,
-      "'revision' must be a valid stage number ([0-3])!"
-    )
+  -- Map legacy RevType to VCSReferenceType
+  local vcs_type
+  if rev_type == RevType.LOCAL then
+    vcs_type = VCSReferenceType.LOCAL
+  elseif rev_type == RevType.COMMIT then
+    vcs_type = VCSReferenceType.COMMIT
+  elseif rev_type == RevType.STAGE then
+    vcs_type = VCSReferenceType.STAGE
+  elseif rev_type == RevType.CUSTOM then
+    vcs_type = VCSReferenceType.CUSTOM
+  else
+    error("Invalid RevType: " .. tostring(rev_type))
   end
-
-  t = type(track_head)
-  assert(t == "boolean" or t == "nil", "'track_head' must be of type boolean!")
-
+  
+  -- Initialize parent VCSReference
+  VCSReference.init(self, vcs_type, revision, track_head)
+  
+  -- Maintain legacy field for backward compatibility
   self.type = rev_type
-  self.track_head = track_head or false
-
-  if type(revision) == "string" then
-    ---@cast revision string
-    self.commit = revision
-  elseif type(revision) == "number" then
-    ---@cast revision number
-    self.stage = revision
-  end
 end
 
 function Rev:__tostring()
-  if self.type == RevType.COMMIT or self.type == RevType.STAGE then
-    return self:object_name()
-  elseif self.type == RevType.LOCAL then
-    return "LOCAL"
-  elseif self.type == RevType.CUSTOM then
-    return "CUSTOM"
-  end
+  -- Delegate to parent's display_name method
+  return self:display_name()
 end
 
 ---@diagnostic disable: unused-local, missing-return
@@ -109,15 +99,7 @@ end
 
 ---@diagnostic enable: unused-local, missing-return
 
----Get an abbreviated commit SHA. Returns `nil` if this Rev is not a commit.
----@param length integer|nil
----@return string|nil
-function Rev:abbrev(length)
-  if self.commit then
-    return self.commit:sub(1, length or 7)
-  end
-  return nil
-end
+-- abbrev method is inherited from VCSReference
 
 M.RevType = RevType
 M.Rev = Rev

@@ -9,18 +9,7 @@ local utils = require("diffview.utils")
 local vcs_utils = require("diffview.adapters.vcs.utils")
 
 local Diff2Hor = lazy.access("diffview.scene.layouts.diff_2_hor", "Diff2Hor") ---@type Diff2Hor|LazyModule
-local Rev = lazy.access("diffview.adapters.vcs.rev", "Rev") ---@type Rev|LazyModule
-local RevType = lazy.access("diffview.adapters.vcs.rev", "RevType") ---@type RevType|LazyModule
-
----@class FileRev : Rev
-local FileRev = oop.create_class("FileRev", Rev)
-
-function FileRev:init(type, commit, track_head) Rev.init(self, type, commit, track_head) end
-
--- Implement required abstract methods for File operations
-function FileRev:object_name() return self.commit or "LOCAL" end
-function FileRev:abbrev() return self.commit or "LOCAL" end
-function FileRev:object_name_canonical() return self.commit or "LOCAL" end
+local FileReference = lazy.access("diffview.adapters.file_reference", "FileReference") ---@type FileReference|LazyModule
 
 local api = vim.api
 local await, pawait = async.await, async.pawait
@@ -36,7 +25,7 @@ local M = {}
 local FileAdapter = oop.create_class("FileAdapter", VCSAdapter)
 
 FileAdapter.config_key = "file"
-FileAdapter.Rev = FileRev
+FileAdapter.FileReference = FileReference
 FileAdapter.bootstrap = {
   done = false,
   ok = false,
@@ -303,9 +292,14 @@ function FileAdapter:diffview_options(argo)
   local left, right, extra_args = self:rev_to_args("", paths)
 
   -- Create options similar to GitAdapter but for file operations
+  local selected_file = nil
+  if argo and type(argo.get_flag) == "function" then
+    selected_file = argo:get_flag("selected-file", { no_empty = true, expand = true })
+  end
+  
   local options = {
     show_untracked = false, -- File adapter doesn't have untracked files
-    selected_file = argo:get_flag("selected-file", { no_empty = true, expand = true })
+    selected_file = selected_file
       or (vim.bo.buftype == "" and pl:vim_expand("%:p"))
       or nil,
   }
@@ -318,7 +312,13 @@ function FileAdapter:diffview_options(argo)
 end
 
 ---Get tracked files using git diff --no-index
-FileAdapter.tracked_files = async.wrap(function(self, left, right, args, kind, opt, callback)
+---@param left? FileReference Left file reference
+---@param right? FileReference Right file reference  
+---@param args? string[] Additional arguments
+---@param kind? string File kind
+---@param opt? table Options
+---@return table[] files List of file entries
+function FileAdapter:tracked_files(left, right, args, kind, opt)
   args = args or {}
   opt = opt or {}
 
@@ -326,13 +326,23 @@ FileAdapter.tracked_files = async.wrap(function(self, left, right, args, kind, o
   logger:debug("tracked_files", log_opt)
 
   local paths = self.ctx.path_args
-  if #paths < 1 then return callback("No file paths provided") end
+  if #paths < 1 then 
+    return {}
+  end
+
+  -- Create FileReference objects if not provided
+  if not left and #paths >= 1 then
+    left = FileReference(paths[1])
+  end
+  if not right and #paths >= 2 then
+    right = FileReference(paths[2])
+  end
 
   local cmd_args = { "diff", "--no-index", "--name-status" }
 
   -- Add paths to compare
   if #paths == 1 then
-    -- Compare single file to itself (empty diff)
+    -- Compare single file to empty
     vim.list_extend(cmd_args, { "/dev/null", paths[1] })
   else
     -- Compare first two paths
@@ -345,7 +355,7 @@ FileAdapter.tracked_files = async.wrap(function(self, left, right, args, kind, o
     -- git diff --no-index returns 1 when files differ, which is expected
     local err_msg = table.concat(out, "\n")
     logger:error("git diff --no-index failed", { code = code, output = err_msg }, log_opt)
-    return callback("Failed to compare files: " .. err_msg)
+    return {}
   end
 
   local files = {}
@@ -359,44 +369,21 @@ FileAdapter.tracked_files = async.wrap(function(self, left, right, args, kind, o
         stats = { additions = 0, deletions = 0 },
         kind = "working",
         revs = {
-          a = self.Rev(RevType.LOCAL, self.ctx.path_args[1]),
-          b = self.Rev(RevType.LOCAL, self.ctx.path_args[2]),
+          a = left,
+          b = right,
         },
       })
       table.insert(files, file_entry)
     end
   end
 
-  callback(nil, files, {})
-end)
+  return files
+end
 
 ---Get untracked files (always empty for FileAdapter)
 FileAdapter.untracked_files = async.wrap(function(self, left, right, opt, callback)
   -- File adapter doesn't have a concept of untracked files
   callback(nil, {})
-end)
-
----Show file contents
----@param self FileAdapter
----@param path string # File path
----@param rev string? # Revision (ignored for files)
----@param callback fun(stderr: string[]?, stdout: string[]?)
-FileAdapter.show = async.wrap(function(self, path, rev, callback)
-  if not pl:is_abs(path) then path = pl:join(self.ctx.toplevel, path) end
-
-  local file_type = pl:type(path)
-  if file_type ~= "file" then
-    callback({ "File does not exist: " .. path }, nil)
-    return
-  end
-
-  local ok, content = pcall(vim.fn.readfile, path)
-  if not ok then
-    callback({ "Failed to read file: " .. path .. " - " .. tostring(content) }, nil)
-    return
-  end
-
-  callback(nil, content)
 end)
 
 ---Get file blob hash (use file modification time)
@@ -475,33 +462,59 @@ function FileAdapter:get_show_args(path, rev) return { path } end
 --[[
 Override the default VCS show method to read files directly from filesystem.
 
-The base VCSAdapter.show method executes git commands to retrieve file content,
-but FileAdapter needs to read arbitrary files outside of git repositories.
-This implementation:
-1. Uses rev.commit (which stores the actual file path) as the source
-2. Handles path resolution for relative paths  
-3. Reads files directly with vim.fn.readfile() instead of git
-4. Provides proper error handling for missing files
-
-This is essential for --no-index functionality where we compare arbitrary files
-that may not be under version control.
+This implementation works with both FileReference objects and legacy Rev objects
+for backward compatibility. It reads files directly from the filesystem instead
+of using git commands.
 --]]
----@param path string
----@param rev Rev?
----@param callback fun(stderr: string[]?, stdout: string[]?)
-FileAdapter.show = async.wrap(function(self, path, rev, callback)
-  local file_path = rev and rev.commit or path
-
-  if not pl:is_absolute(file_path) then file_path = pl:join(self.ctx.toplevel, file_path) end
-
-  if not pl:exists(file_path) then
-    callback({ "File not found: " .. file_path }, nil)
-    return
+---@param path string File path or ignored if ref is FileReference
+---@param ref FileReference|Rev? Content reference
+---@param callback? fun(stderr: string[]?, stdout: string[]?) Optional callback for async operation
+---@return string[]? content File content lines (when called synchronously)
+function FileAdapter:show(path, ref, callback)
+  local file_path = path
+  
+  -- Handle FileReference objects
+  if ref and type(ref) == "table" then
+    if ref.path then
+      -- FileReference object
+      file_path = ref.path
+    elseif ref.commit then
+      -- Legacy Rev object with file path in commit field
+      file_path = ref.commit
+    end
   end
 
-  local content = vim.fn.readfile(file_path)
-  callback(nil, content)
-end, 3)
+  if not pl:is_abs(file_path) then 
+    file_path = pl:join(self.ctx.toplevel, file_path) 
+  end
+
+  if not pl:stat(file_path) then
+    local error_msg = { "File not found: " .. file_path }
+    if callback then
+      callback(error_msg, nil)
+      return
+    else
+      return nil
+    end
+  end
+
+  local ok, content = pcall(vim.fn.readfile, file_path)
+  if not ok then
+    local error_msg = { "Failed to read file: " .. file_path .. " - " .. tostring(content) }
+    if callback then
+      callback(error_msg, nil)
+      return
+    else
+      return nil
+    end
+  end
+
+  if callback then
+    callback(nil, content)
+  else
+    return content
+  end
+end
 
 -- Export the class
 M.FileAdapter = FileAdapter
